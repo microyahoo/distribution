@@ -75,6 +75,7 @@ func (bs *blobStore) Put(ctx context.Context, mediaType string, p []byte) (distr
 	if err != nil {
 		return distribution.Descriptor{}, err
 	}
+	dcontext.GetLogger(ctx).Infof("blobStore: the path is %s for dgst(%v), and the len(p) = %d", bp, dgst, len(p))
 
 	// TODO(stevvooe): Write out mediatype here, as well.
 	return distribution.Descriptor{

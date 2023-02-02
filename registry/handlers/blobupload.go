@@ -28,7 +28,7 @@ func blobUploadDispatcher(ctx *Context, r *http.Request) http.Handler {
 		http.MethodHead: http.HandlerFunc(buh.GetUploadStatus),
 	}
 
-	if !ctx.readOnly {
+	if !ctx.readOnly { //not readonly
 		handler[http.MethodPost] = http.HandlerFunc(buh.StartBlobUpload)
 		handler[http.MethodPatch] = http.HandlerFunc(buh.PatchBlobData)
 		handler[http.MethodPut] = http.HandlerFunc(buh.PutBlobUploadComplete)

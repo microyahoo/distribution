@@ -1,0 +1,54 @@
+version: 0.1
+log:
+  level: debug
+  fields:
+    service: registry
+    environment: development
+storage:
+    delete:
+      enabled: true
+    cache:
+        blobdescriptor: inmemory
+    s3:
+      accesskey: testy
+      secretkey: testy
+      region: us-west-1
+      regionendpoint: http://10.3.9.144:80
+      # forcepathstyle: true
+      # accelerate: false
+      bucket: test-harbor
+      # encrypt: true
+      # chunksize: 5242880
+      multipartcopychunksize: 33554432
+      multipartcopymaxconcurrency: 100
+      multipartcopythresholdsize: 33554432
+      # rootdirectory: /s3/object/name/prefix
+      # usedualstack: false
+      loglevel: info
+    tag:
+      concurrencylimit: 10
+    redirect:
+      disable: true
+    # filesystem:
+    #     rootdirectory: /mnt/ceph/registry
+    maintenance:
+        uploadpurging:
+            enabled: true
+            age: 168h
+            interval: 24h
+            dryrun: false
+http:
+    addr: :19088
+    # addr: :5000
+    debug:
+        addr: :5001
+        prometheus:
+            enabled: true
+            path: /metrics
+    headers:
+        X-Content-Type-Options: [nosniff]
+health:
+  storagedriver:
+    enabled: false 
+    interval: 10s
+    threshold: 3

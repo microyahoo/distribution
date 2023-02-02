@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/distribution/distribution/v3/internal/dcontext"
 )
@@ -37,7 +38,11 @@ func copyFullPayload(ctx context.Context, responseWriter http.ResponseWriter, r 
 	}
 
 	// Read in the data, if any.
-	copied, err := io.Copy(destWriter, body)
+	start := time.Now()
+	copied, err := io.CopyBuffer(destWriter, body, make([]byte, 4<<20))
+	_, ok1 := destWriter.(io.WriterTo)
+	_, ok2 := body.(io.ReaderFrom)
+	dcontext.GetLogger(ctx).Infof("****The duration of io.Copy(size: %d) from reader(%T, %t) to writer(%T, %t): %v", copied, body, ok2, destWriter, ok1, time.Since(start))
 	if clientClosed != nil && (err != nil || (r.ContentLength > 0 && copied < r.ContentLength)) {
 		// Didn't receive as much content as expected. Did the client
 		// disconnect during the request? If so, avoid returning a 400

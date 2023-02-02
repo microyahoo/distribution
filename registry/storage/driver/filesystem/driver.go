@@ -12,6 +12,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/distribution/distribution/v3/internal/dcontext"
 	storagedriver "github.com/distribution/distribution/v3/registry/storage/driver"
 	"github.com/distribution/distribution/v3/registry/storage/driver/base"
 	"github.com/distribution/distribution/v3/registry/storage/driver/factory"
@@ -26,6 +27,10 @@ const (
 	// parameter. If the driver's parameters are less than this we set
 	// the parameters to minThreads
 	minThreads = uint64(25)
+)
+
+var (
+	copyBuf = 4 << 20
 )
 
 // DriverParameters represents all configuration options available for the
@@ -124,10 +129,12 @@ func (d *driver) GetContent(ctx context.Context, path string) ([]byte, error) {
 	}
 	defer rc.Close()
 
+	start := time.Now()
 	p, err := io.ReadAll(rc)
 	if err != nil {
 		return nil, err
 	}
+	dcontext.GetLogger(ctx).Infof("***filesystem driver(GetContent): the path is %s, and the len(content) = %d, duration=%v", path, len(p), time.Since(start))
 
 	return p, nil
 }
@@ -139,13 +146,16 @@ func (d *driver) PutContent(ctx context.Context, subPath string, contents []byte
 		return err
 	}
 	defer writer.Close()
+	start := time.Now()
 	_, err = io.Copy(writer, bytes.NewReader(contents))
+	// _, err = io.CopyBuffer(writer, bytes.NewReader(contents), make([]byte, copyBuf))
 	if err != nil {
 		if cErr := writer.Cancel(ctx); cErr != nil {
 			return errors.Join(err, cErr)
 		}
 		return err
 	}
+	dcontext.GetLogger(ctx).Infof("***filesystem driver(PutContent): the path is %s, and the len(content) = %d, duration=%v", subPath, len(contents), time.Since(start))
 	return writer.Commit(ctx)
 }
 
@@ -361,7 +371,10 @@ func (fw *fileWriter) Write(p []byte) (int, error) {
 	} else if fw.cancelled {
 		return 0, fmt.Errorf("already cancelled")
 	}
+	start := time.Now()
 	n, err := fw.bw.Write(p)
+	dcontext.GetLogger(context.TODO()).Infof("***filesystem writer(Write): the len(content) = %d, size(filewriter) = %d, duration=%v",
+		len(p), fw.size, time.Since(start))
 	fw.size += int64(n)
 	return n, err
 }
@@ -375,13 +388,17 @@ func (fw *fileWriter) Close() error {
 		return fmt.Errorf("already closed")
 	}
 
+	start := time.Now()
 	if err := fw.bw.Flush(); err != nil {
 		return err
 	}
+	dcontext.GetLogger(context.TODO()).Infof("***filesystem writer(Flush): the duration=%v", time.Since(start))
 
+	start = time.Now()
 	if err := fw.file.Sync(); err != nil {
 		return err
 	}
+	dcontext.GetLogger(context.TODO()).Infof("***filesystem writer(Sync): the duration=%v", time.Since(start))
 
 	if err := fw.file.Close(); err != nil {
 		return err

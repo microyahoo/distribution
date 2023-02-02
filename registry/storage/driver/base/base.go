@@ -108,6 +108,9 @@ func (base *Base) GetContent(ctx context.Context, path string) ([]byte, error) {
 
 	defer span.End()
 
+	ctx, done := dcontext.WithTrace(ctx)
+	defer done("---->%s.XXGetContent(%q)", base.Name(), path)
+
 	if !storagedriver.PathRegexp.MatchString(path) {
 		return nil, storagedriver.InvalidPathError{Path: path, DriverName: base.StorageDriver.Name()}
 	}
@@ -132,6 +135,10 @@ func (base *Base) PutContent(ctx context.Context, path string, content []byte) e
 
 	defer span.End()
 
+	ctx, done := dcontext.WithTrace(ctx)
+	// defer done("%s.PutContent(%q)", base.Name(), path)
+	defer done("----->%s.XXPutContent(%q, len(content)=%d)", base.Name(), path, len(content))
+
 	if !storagedriver.PathRegexp.MatchString(path) {
 		return storagedriver.InvalidPathError{Path: path, DriverName: base.StorageDriver.Name()}
 	}
@@ -155,6 +162,9 @@ func (base *Base) Reader(ctx context.Context, path string, offset int64) (io.Rea
 		trace.WithAttributes(attrs...))
 
 	defer span.End()
+
+	ctx, done := dcontext.WithTrace(ctx)
+	defer done("--->%s.XXReader(%q, %d)", base.Name(), path, offset)
 
 	if offset < 0 {
 		return nil, storagedriver.InvalidOffsetError{Path: path, Offset: offset, DriverName: base.StorageDriver.Name()}
@@ -182,6 +192,9 @@ func (base *Base) Writer(ctx context.Context, path string, append bool) (storage
 
 	defer span.End()
 
+	ctx, done := dcontext.WithTrace(ctx)
+	defer done("--->%s.XXWriter(%q, %v)", base.Name(), path, append)
+
 	if !storagedriver.PathRegexp.MatchString(path) {
 		return nil, storagedriver.InvalidPathError{Path: path, DriverName: base.StorageDriver.Name()}
 	}
@@ -202,6 +215,9 @@ func (base *Base) Stat(ctx context.Context, path string) (storagedriver.FileInfo
 		trace.WithAttributes(attrs...))
 
 	defer span.End()
+
+	ctx, done := dcontext.WithTrace(ctx)
+	defer done("====>%s.Stat(%q)", base.Name(), path)
 
 	if !storagedriver.PathRegexp.MatchString(path) && path != "/" {
 		return nil, storagedriver.InvalidPathError{Path: path, DriverName: base.StorageDriver.Name()}
@@ -225,6 +241,9 @@ func (base *Base) List(ctx context.Context, path string) ([]string, error) {
 		trace.WithAttributes(attrs...))
 
 	defer span.End()
+
+	ctx, done := dcontext.WithTrace(ctx)
+	defer done("--->%s.List(%q)", base.Name(), path)
 
 	if !storagedriver.PathRegexp.MatchString(path) && path != "/" {
 		return nil, storagedriver.InvalidPathError{Path: path, DriverName: base.StorageDriver.Name()}
@@ -251,7 +270,7 @@ func (base *Base) Move(ctx context.Context, sourcePath string, destPath string) 
 	defer span.End()
 
 	ctx, done := dcontext.WithTrace(ctx)
-	defer done("%s.Move(%q, %q", base.Name(), sourcePath, destPath)
+	defer done("--->%s.Move(%q, %q", base.Name(), sourcePath, destPath)
 
 	if !storagedriver.PathRegexp.MatchString(sourcePath) {
 		return storagedriver.InvalidPathError{Path: sourcePath, DriverName: base.StorageDriver.Name()}
@@ -277,6 +296,9 @@ func (base *Base) Delete(ctx context.Context, path string) error {
 		trace.WithAttributes(attrs...))
 
 	defer span.End()
+
+	ctx, done := dcontext.WithTrace(ctx)
+	defer done("---->%s.Delete(%q)", base.Name(), path)
 
 	if !storagedriver.PathRegexp.MatchString(path) {
 		return storagedriver.InvalidPathError{Path: path, DriverName: base.StorageDriver.Name()}

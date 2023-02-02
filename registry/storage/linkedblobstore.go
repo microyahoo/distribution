@@ -125,7 +125,7 @@ func WithMountFrom(ref reference.Canonical) distribution.BlobCreateOption {
 
 // Create begins a blob write session, returning a handle.
 func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.BlobCreateOption) (distribution.BlobWriter, error) {
-	dcontext.GetLogger(ctx).Debug("(*linkedBlobStore).Create")
+	dcontext.GetLogger(ctx).Debug("(*linkedBlobStore).Create.XXBlobStoreWriter")
 
 	var opts distribution.CreateOptions
 
