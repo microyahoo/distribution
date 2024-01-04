@@ -58,7 +58,7 @@ type RegistryOption func(*registry) error
 
 // EnableRedirect is a functional option for NewRegistry. It causes the backend
 // blob server to attempt using (StorageDriver).RedirectURL to serve all blobs.
-func EnableRedirect(registry *registry) error {
+func EnableRedirect(registry *registry) error { // 是否 enable redirect
 	registry.blobServer.redirect = true
 	return nil
 }

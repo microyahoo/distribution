@@ -34,7 +34,7 @@ func (bs *blobServer) ServeBlob(ctx context.Context, w http.ResponseWriter, r *h
 		return err
 	}
 
-	if bs.redirect {
+	if bs.redirect { // redirect url
 		redirectURL, err := bs.driver.RedirectURL(r, path)
 		if err != nil {
 			return err
