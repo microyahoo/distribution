@@ -9,15 +9,34 @@ storage:
       enabled: true
     cache:
         blobdescriptor: inmemory
-    filesystem:
-        rootdirectory: /mnt/ceph/registry
+    s3:
+      accesskey: testy
+      secretkey: testy
+      region: us-west-1
+      regionendpoint: http://10.9.8.73:80
+      # forcepathstyle: true
+      # accelerate: false
+      bucket: test2
+      # encrypt: true
+      # chunksize: 5242880
+      multipartcopychunksize: 33554432
+      multipartcopymaxconcurrency: 100
+      multipartcopythresholdsize: 33554432
+      # rootdirectory: /s3/object/name/prefix
+      # usedualstack: false
+      loglevel: debug
+    redirect:
+      disable: true
+    # filesystem:
+    #     rootdirectory: /mnt/ceph/registry
     maintenance:
         uploadpurging:
             enabled: false
     tag:
       concurrencylimit: 8
 http:
-    addr: :5000
+    addr: :19088
+    # addr: :5000
     debug:
         addr: :5001
         prometheus:
@@ -27,6 +46,6 @@ http:
         X-Content-Type-Options: [nosniff]
 health:
   storagedriver:
-    enabled: true
+    enabled: false 
     interval: 10s
     threshold: 3

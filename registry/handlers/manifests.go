@@ -46,7 +46,7 @@ func manifestDispatcher(ctx *Context, r *http.Request) http.Handler {
 	manifestHandler := &manifestHandler{
 		Context: ctx,
 	}
-	ref := getReference(ctx)
+	ref := getReference(ctx) // tag 或者是 digest
 	dgst, err := digest.Parse(ref)
 	if err != nil {
 		// We just have a tag
@@ -61,8 +61,8 @@ func manifestDispatcher(ctx *Context, r *http.Request) http.Handler {
 	}
 
 	if !ctx.readOnly {
-		mhandler[http.MethodPut] = http.HandlerFunc(manifestHandler.PutManifest)
-		mhandler[http.MethodDelete] = http.HandlerFunc(manifestHandler.DeleteManifest)
+		mhandler[http.MethodPut] = http.HandlerFunc(manifestHandler.PutManifest)       // put manifest
+		mhandler[http.MethodDelete] = http.HandlerFunc(manifestHandler.DeleteManifest) // delete manifest
 	}
 
 	return mhandler
@@ -80,7 +80,7 @@ type manifestHandler struct {
 // GetManifest fetches the image manifest from the storage backend, if it exists.
 func (imh *manifestHandler) GetManifest(w http.ResponseWriter, r *http.Request) {
 	dcontext.GetLogger(imh).Debug("GetImageManifest")
-	manifests, err := imh.Repository.Manifests(imh)
+	manifests, err := imh.Repository.Manifests(imh) // registry/storage/registry.go
 	if err != nil {
 		imh.Errors = append(imh.Errors, err)
 		return
@@ -250,7 +250,7 @@ func (imh *manifestHandler) PutManifest(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	mediaType := r.Header.Get("Content-Type")
+	mediaType := r.Header.Get("Content-Type") // application/vnd.docker.distribution.manifest.v2+json
 	manifest, desc, err := distribution.UnmarshalManifest(mediaType, jsonBuf.Bytes())
 	if err != nil {
 		imh.Errors = append(imh.Errors, errcode.ErrorCodeManifestInvalid.WithDetail(err))
@@ -288,7 +288,7 @@ func (imh *manifestHandler) PutManifest(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_, err = manifests.Put(imh, manifest, options...)
+	_, err = manifests.Put(imh, manifest, options...) // registry/storage/manifeststore.go
 	if err != nil {
 		// TODO(stevvooe): These error handling switches really need to be
 		// handled by an app global mapper.
@@ -329,7 +329,7 @@ func (imh *manifestHandler) PutManifest(w http.ResponseWriter, r *http.Request) 
 	// Tag this manifest
 	if imh.Tag != "" {
 		tags := imh.Repository.Tags(imh)
-		err = tags.Tag(imh, imh.Tag, desc)
+		err = tags.Tag(imh, imh.Tag, desc) // registry/storage/tagstore.go
 		if err != nil {
 			imh.Errors = append(imh.Errors, errcode.ErrorCodeUnknown.WithDetail(err))
 			return

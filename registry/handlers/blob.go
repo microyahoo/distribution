@@ -33,7 +33,7 @@ func blobDispatcher(ctx *Context, r *http.Request) http.Handler {
 
 	mhandler := handlers.MethodHandler{
 		http.MethodGet:  http.HandlerFunc(blobHandler.GetBlob),
-		http.MethodHead: http.HandlerFunc(blobHandler.GetBlob),
+		http.MethodHead: http.HandlerFunc(blobHandler.GetBlob), // head blob
 	}
 
 	if !ctx.readOnly {
@@ -55,7 +55,7 @@ type blobHandler struct {
 func (bh *blobHandler) GetBlob(w http.ResponseWriter, r *http.Request) {
 	dcontext.GetLogger(bh).Debug("GetBlob")
 	blobs := bh.Repository.Blobs(bh)
-	desc, err := blobs.Stat(bh, bh.Digest)
+	desc, err := blobs.Stat(bh, bh.Digest) // 从 blobStore 中查询指定 digest 的 data 是否存在
 	if err != nil {
 		if err == distribution.ErrBlobUnknown {
 			bh.Errors = append(bh.Errors, errcode.ErrorCodeBlobUnknown.WithDetail(bh.Digest))

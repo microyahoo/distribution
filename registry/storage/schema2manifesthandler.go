@@ -70,6 +70,34 @@ func (ms *schema2ManifestHandler) Put(ctx context.Context, manifest distribution
 func (ms *schema2ManifestHandler) verifyManifest(ctx context.Context, mnfst schema2.DeserializedManifest, skipDependencyVerification bool) error {
 	var errs distribution.ErrManifestVerification
 
+	// schema2 manifest 格式如下所示:
+	// {
+	//     "schemaVersion": 2,
+	//     "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+	//     "config": {
+	//         "mediaType": "application/vnd.docker.container.image.v1+json",
+	//         "size": 7854,
+	//         "digest": "sha256:ebf01b748a56f9aa05d67a960d21c53ee0fff7fd14f4791161f5410ea1769e36"
+	//     },
+	//     "layers": [
+	//         {
+	//             "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+	//             "size": 2814559,
+	//             "digest": "sha256:df9b9388f04ad6279a7410b85cedfdcb2208c0a003da7ab5613af71079148139"
+	//         },
+	//         {
+	//             "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+	//             "size": 1284,
+	//             "digest": "sha256:7902437d3a1288bbe38562c760e4e6b155617991e782f33ddd81da3f4f88305a"
+	//         },
+	//         {
+	//             "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+	//             "size": 149,
+	//             "digest": "sha256:709e2267bc988471d02df06f7a9f133dd3195af6da61c0869b0555f72f0c1e4e"
+	//         }
+	//     ]
+	// }
+
 	if mnfst.Manifest.SchemaVersion != 2 {
 		return fmt.Errorf("unrecognized manifest schema version %d", mnfst.Manifest.SchemaVersion)
 	}
@@ -122,7 +150,7 @@ func (ms *schema2ManifestHandler) verifyManifest(ctx context.Context, mnfst sche
 			fallthrough // double check the blob store.
 		default:
 			// check its presence
-			_, err = blobsService.Stat(ctx, descriptor.Digest)
+			_, err = blobsService.Stat(ctx, descriptor.Digest) // ??? 检查 layer 对应的 digest data 是否存在
 		}
 
 		if err != nil {

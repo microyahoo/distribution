@@ -164,7 +164,7 @@ func (ub *URLBuilder) BuildManifestURL(ref reference.Named) (string, error) {
 
 // BuildBlobURL constructs the url for the blob identified by name and dgst.
 func (ub *URLBuilder) BuildBlobURL(ref reference.Canonical) (string, error) {
-	route := ub.cloneRoute(RouteNameBlob)
+	route := ub.cloneRoute(RouteNameBlob) // /v2/{name}/blobs/{digest}
 
 	layerURL, err := route.URL("name", ref.Name(), "digest", ref.Digest().String())
 	if err != nil {
@@ -192,14 +192,14 @@ func (ub *URLBuilder) BuildBlobUploadURL(name reference.Named, values ...url.Val
 // this url is provided by server implementations during the blob upload
 // process.
 func (ub *URLBuilder) BuildBlobUploadChunkURL(name reference.Named, uuid string, values ...url.Values) (string, error) {
-	route := ub.cloneRoute(RouteNameBlobUploadChunk)
+	route := ub.cloneRoute(RouteNameBlobUploadChunk) // /v2/{name:" + reference.NameRegexp.String() + "}/blobs/uploads/{uuid:[a-zA-Z0-9-_.=]+}
 
 	uploadURL, err := route.URL("name", name.Name(), "uuid", uuid)
 	if err != nil {
 		return "", err
 	}
 
-	return appendValuesURL(uploadURL, values...).String(), nil
+	return appendValuesURL(uploadURL, values...).String(), nil // 附加 query 信息
 }
 
 // cloneRoute returns a clone of the named route from the router. Routes

@@ -129,8 +129,8 @@ func pathFor(spec pathSpec) (string, error) {
 	// to an intermediate path object, than can be consumed and mapped by the
 	// other version.
 
-	rootPrefix := []string{storagePathRoot, storagePathVersion}
-	repoPrefix := append(rootPrefix, "repositories")
+	rootPrefix := []string{storagePathRoot, storagePathVersion} // /docker/registry/v2/
+	repoPrefix := append(rootPrefix, "repositories")            // /docker/registry/v2/repositories/
 
 	switch v := spec.(type) {
 
@@ -227,7 +227,7 @@ func pathFor(spec pathSpec) (string, error) {
 		}
 
 		blobPathPrefix := append(rootPrefix, "blobs")
-		return path.Join(append(blobPathPrefix, components...)...), nil
+		return path.Join(append(blobPathPrefix, components...)...), nil // /docker/registry/v2/blobs/<algorithm>/<first two bytes of digest>/<full digest>/
 	case blobDataPathSpec:
 		components, err := digestPathComponents(v.digest, true)
 		if err != nil {
@@ -235,8 +235,8 @@ func pathFor(spec pathSpec) (string, error) {
 		}
 
 		components = append(components, "data")
-		blobPathPrefix := append(rootPrefix, "blobs")
-		return path.Join(append(blobPathPrefix, components...)...), nil
+		blobPathPrefix := append(rootPrefix, "blobs")                   // /docker/registry/v2/blobs/
+		return path.Join(append(blobPathPrefix, components...)...), nil // /docker/registry/v2/blobs/<algorithm>/<first two bytes of digest>/<full digest>/data
 
 	case uploadDataPathSpec:
 		return path.Join(append(repoPrefix, v.name, "_uploads", v.id, "data")...), nil
@@ -470,7 +470,7 @@ func digestPathComponents(dgst digest.Digest, multilevel bool) ([]string, error)
 
 	var suffix []string
 
-	if multilevel {
+	if multilevel { // 如果是 multilevel，则去 digest 的前两位
 		suffix = append(suffix, hex[:2])
 	}
 

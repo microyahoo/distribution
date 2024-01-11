@@ -663,7 +663,8 @@ func (d *driver) Reader(ctx context.Context, path string, offset int64) (io.Read
 // It returns storagedriver.Error when appending to paths
 // with non-zero committed content.
 func (d *driver) Writer(ctx context.Context, path string, appendMode bool) (storagedriver.FileWriter, error) {
-	key := d.s3Path(path)
+	key := d.s3Path(path) // 数据首先写到 root>/v2/repositories/<name>/_uploads/<id>/data
+	dcontext.GetLogger(ctx).Debugf("s3 driver.Writer, path: %s, key: %s, appendMode: %t", path, key, appendMode)
 	if !appendMode {
 		// TODO (brianbland): cancel other uploads at this path
 		resp, err := d.S3.CreateMultipartUploadWithContext(ctx, &s3.CreateMultipartUploadInput{
@@ -884,7 +885,7 @@ func (d *driver) copy(ctx context.Context, sourcePath string, destPath string) e
 		return parseError(sourcePath, err)
 	}
 
-	if fileInfo.Size() <= d.MultipartCopyThresholdSize {
+	if fileInfo.Size() <= d.MultipartCopyThresholdSize { // 如果小于 MultipartCopyThresholdSize
 		_, err := d.S3.CopyObjectWithContext(ctx, &s3.CopyObjectInput{
 			Bucket:               aws.String(d.Bucket),
 			Key:                  aws.String(d.s3Path(destPath)),
@@ -901,6 +902,7 @@ func (d *driver) copy(ctx context.Context, sourcePath string, destPath string) e
 		return nil
 	}
 
+	dcontext.GetLogger(ctx).Debugf("***driver.copy, source: %s, dest: %s, source fileInfo: %+v", sourcePath, destPath, fileInfo)
 	createResp, err := d.S3.CreateMultipartUploadWithContext(ctx, &s3.CreateMultipartUploadInput{
 		Bucket:               aws.String(d.Bucket),
 		Key:                  aws.String(d.s3Path(destPath)),
@@ -919,7 +921,7 @@ func (d *driver) copy(ctx context.Context, sourcePath string, destPath string) e
 	errChan := make(chan error, numParts)
 	limiter := make(chan struct{}, d.MultipartCopyMaxConcurrency)
 
-	for i := range completedParts {
+	for i := range completedParts { // copy 是使用的多个 goroutine 分段 copy
 		i := int64(i)
 		go func() {
 			limiter <- struct{}{}
@@ -1345,7 +1347,7 @@ func (d *driver) newWriter(ctx context.Context, key, uploadID string, parts []*s
 	return &writer{
 		ctx:      ctx,
 		driver:   d,
-		key:      key,
+		key:      key, // root>/v2/repositories/<name>/_uploads/<id>/data
 		uploadID: uploadID,
 		parts:    parts,
 		size:     size,
@@ -1369,6 +1371,9 @@ func (w *writer) Write(p []byte) (int, error) {
 		return 0, fmt.Errorf("already cancelled")
 	}
 
+	if len(w.parts) > 0 {
+		dcontext.GetLogger(w.ctx).Debugf("**s3 writer: %+v, data length: %d", w, len(p))
+	}
 	// If the last written part is smaller than minChunkSize, we need to make a
 	// new multipart upload :sadface:
 	if len(w.parts) > 0 && int(*w.parts[len(w.parts)-1].Size) < minChunkSize {
@@ -1501,6 +1506,7 @@ func (w *writer) Write(p []byte) (int, error) {
 func (w *writer) Size() int64 {
 	return w.size
 }
+
 func (w *writer) Close() error {
 	if w.closed {
 		return fmt.Errorf("already closed")

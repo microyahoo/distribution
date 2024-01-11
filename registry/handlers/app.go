@@ -105,7 +105,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 	app.register(v2.RouteNameCatalog, catalogDispatcher)
 	app.register(v2.RouteNameTags, tagsDispatcher)
 	app.register(v2.RouteNameBlob, blobDispatcher)
-	app.register(v2.RouteNameBlobUpload, blobUploadDispatcher)
+	app.register(v2.RouteNameBlobUpload, blobUploadDispatcher) // blobUpload 路由注册
 	app.register(v2.RouteNameBlobUploadChunk, blobUploadDispatcher)
 
 	// override the storage driver's UA string for registry outbound HTTP requests
@@ -118,7 +118,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 	}
 
 	var err error
-	app.driver, err = factory.Create(app, config.Storage.Type(), storageParams)
+	app.driver, err = factory.Create(app, config.Storage.Type(), storageParams) // 创建 storage driver
 	if err != nil {
 		// TODO(stevvooe): Move the creation of a service into a protected
 		// method, where this is created lazily. Its status can be queried via
@@ -273,7 +273,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 	}
 
 	// configure storage caches
-	if cc, ok := config.Storage["cache"]; ok {
+	if cc, ok := config.Storage["cache"]; ok { // 如果配置了 cache
 		v, ok := cc["blobdescriptor"]
 		if !ok {
 			// Backwards compatible: "layerinfo" == "blobdescriptor"
@@ -308,7 +308,7 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 
 			cacheProvider := memorycache.NewInMemoryBlobDescriptorCacheProvider(blobDescriptorSize)
 			localOptions := append(options, storage.BlobDescriptorCacheProvider(cacheProvider))
-			app.registry, err = storage.NewRegistry(app, app.driver, localOptions...)
+			app.registry, err = storage.NewRegistry(app, app.driver, localOptions...) // 创建 registry，这里是用内存作为缓存
 			if err != nil {
 				panic("could not create registry: " + err.Error())
 			}
@@ -378,7 +378,7 @@ func (app *App) RegisterHealthChecks(healthRegistries ...*health.Registry) {
 		healthRegistry = healthRegistries[0]
 	}
 
-	if app.Config.Health.StorageDriver.Enabled {
+	if app.Config.Health.StorageDriver.Enabled { // storage driver health check
 		interval := app.Config.Health.StorageDriver.Interval
 		if interval == 0 {
 			interval = defaultCheckInterval
@@ -501,7 +501,7 @@ func (app *App) configureEvents(configuration *configuration.Configuration) {
 			Ignore:            endpoint.Ignore,
 		})
 
-		sinks = append(sinks, endpoint)
+		sinks = append(sinks, endpoint) // notification endpoints
 	}
 
 	// NOTE(stevvooe): Moving to a new queuing implementation is as easy as
@@ -711,10 +711,10 @@ func (app *App) dispatcher(dispatch dispatchFunc) http.Handler {
 			}
 
 			// assign and decorate the authorized repository with an event bridge.
-			context.Repository, context.RepositoryRemover = notifications.Listen(
+			context.Repository, context.RepositoryRemover = notifications.Listen( // repositoryListener
 				repository,
 				context.App.repoRemover,
-				app.eventBridge(context, r))
+				app.eventBridge(context, r)) // 创建 event bridge
 
 			context.Repository, err = applyRepoMiddleware(app, context.Repository, app.Config.Middleware["repository"])
 			if err != nil {

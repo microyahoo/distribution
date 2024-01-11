@@ -128,7 +128,7 @@ func (ms *manifestStore) Get(ctx context.Context, dgst digest.Digest, options ..
 func (ms *manifestStore) Put(ctx context.Context, manifest distribution.Manifest, options ...distribution.ManifestServiceOption) (digest.Digest, error) {
 	dcontext.GetLogger(ms.ctx).Debug("(*manifestStore).Put")
 
-	switch manifest.(type) {
+	switch manifest.(type) { // 判断 manifest 类型
 	case *schema2.DeserializedManifest:
 		return ms.schema2Handler.Put(ctx, manifest, ms.skipDependencyVerification)
 	case *ocischema.DeserializedManifest:

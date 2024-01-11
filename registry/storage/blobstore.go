@@ -163,14 +163,14 @@ var _ distribution.BlobDescriptorService = &blobStatter{}
 // in the main blob store. If this method returns successfully, there is
 // strong guarantee that the blob exists and is available.
 func (bs *blobStatter) Stat(ctx context.Context, dgst digest.Digest) (distribution.Descriptor, error) {
-	path, err := pathFor(blobDataPathSpec{
+	path, err := pathFor(blobDataPathSpec{ // <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>/data
 		digest: dgst,
 	})
 	if err != nil {
 		return distribution.Descriptor{}, err
 	}
 
-	fi, err := bs.driver.Stat(ctx, path)
+	fi, err := bs.driver.Stat(ctx, path) // 从后端 storage driver 中读取
 	if err != nil {
 		switch err := err.(type) {
 		case driver.PathNotFoundError:

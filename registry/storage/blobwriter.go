@@ -35,7 +35,7 @@ type blobWriter struct {
 
 	fileWriter storagedriver.FileWriter
 	driver     storagedriver.StorageDriver
-	path       string
+	path       string // <root>/v2/repositories/<name>/_uploads/<id>/data
 
 	resumableDigestEnabled bool
 	committed              bool
@@ -45,7 +45,7 @@ var _ distribution.BlobWriter = &blobWriter{}
 
 // ID returns the identifier for this upload.
 func (bw *blobWriter) ID() string {
-	return bw.id
+	return bw.id // 返回唯一的 UUID
 }
 
 func (bw *blobWriter) StartedAt() time.Time {
@@ -128,7 +128,7 @@ func (bw *blobWriter) Write(p []byte) (int, error) {
 	return n, err
 }
 
-func (bw *blobWriter) ReadFrom(r io.Reader) (n int64, err error) {
+func (bw *blobWriter) ReadFrom(r io.Reader) (n int64, err error) { // blobWriter 实现了 ReadFrom 接口，因此如果源端没有实现 WriterTo 接口的 WriteTo 方法，则 io.Copy 时会调用此方法
 	// Ensure that the current write offset matches how many bytes have been
 	// written to the digester. If not, we need to update the digest state to
 	// match the current write position.
@@ -139,7 +139,7 @@ func (bw *blobWriter) ReadFrom(r io.Reader) (n int64, err error) {
 	// Using a TeeReader instead of MultiWriter ensures Copy returns
 	// the amount written to the digester as well as ensuring that we
 	// write to the fileWriter first
-	tee := io.TeeReader(r, bw.fileWriter)
+	tee := io.TeeReader(r, bw.fileWriter) // 从 reader 中读取数据写入 blobWriter.fileWriter
 	nn, err := io.Copy(bw.digester.Hash(), tee)
 	bw.written += nn
 
@@ -291,7 +291,7 @@ func (bw *blobWriter) validateBlob(ctx context.Context, desc distribution.Descri
 // identified by dgst. The layer should be validated before commencing the
 // move.
 func (bw *blobWriter) moveBlob(ctx context.Context, desc distribution.Descriptor) error {
-	blobPath, err := pathFor(blobDataPathSpec{
+	blobPath, err := pathFor(blobDataPathSpec{ // <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>/data
 		digest: desc.Digest,
 	})
 	if err != nil {
@@ -318,7 +318,7 @@ func (bw *blobWriter) moveBlob(ctx context.Context, desc distribution.Descriptor
 	// the size here and write a zero-length file to blobPath if this is the
 	// case. For the most part, this should only ever happen with zero-length
 	// blobs.
-	if _, err := bw.blobStore.driver.Stat(ctx, bw.path); err != nil {
+	if _, err := bw.blobStore.driver.Stat(ctx, bw.path); err != nil { // <root>/v2/repositories/<name>/_uploads/<id>/data
 		switch err := err.(type) {
 		case storagedriver.PathNotFoundError:
 			// HACK(stevvooe): This is slightly dangerous: if we verify above,
@@ -341,7 +341,7 @@ func (bw *blobWriter) moveBlob(ctx context.Context, desc distribution.Descriptor
 
 	// TODO(stevvooe): We should also write the mediatype when executing this move.
 
-	return bw.blobStore.driver.Move(ctx, bw.path, blobPath)
+	return bw.blobStore.driver.Move(ctx, bw.path, blobPath) // 将 _uploads 中的 data 移至 blobs data
 }
 
 // removeResources should clean up all resources associated with the upload
@@ -359,7 +359,7 @@ func (bw *blobWriter) removeResources(ctx context.Context) error {
 	// Resolve and delete the containing directory, which should include any
 	// upload related files.
 	dirPath := path.Dir(dataPath)
-	if err := bw.blobStore.driver.Delete(ctx, dirPath); err != nil {
+	if err := bw.blobStore.driver.Delete(ctx, dirPath); err != nil { // 删除 <root>/v2/repositories/<name>/_uploads/<id>/data
 		switch err := err.(type) {
 		case storagedriver.PathNotFoundError:
 			break // already gone!

@@ -36,14 +36,14 @@ func (cbds *cachedBlobStatter) Stat(ctx context.Context, dgst digest.Digest) (di
 	cacheRequestCount.Inc(1)
 
 	// try getting from cache
-	desc, cacheErr := cbds.cache.Stat(ctx, dgst)
+	desc, cacheErr := cbds.cache.Stat(ctx, dgst) // 首先从缓存中读取
 	if cacheErr == nil {
 		cacheHitCount.Inc(1)
 		return desc, nil
 	}
 
 	// couldn't get from cache; get from backend
-	desc, err := cbds.backend.Stat(ctx, dgst)
+	desc, err := cbds.backend.Stat(ctx, dgst) // 缓存中没有就从 backend 读取
 	if err != nil {
 		return desc, err
 	}

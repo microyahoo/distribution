@@ -18,6 +18,9 @@ import (
 // blobUploadDispatcher constructs and returns the blob upload handler for the
 // given request context.
 func blobUploadDispatcher(ctx *Context, r *http.Request) http.Handler {
+	if r.Method == http.MethodPatch {
+		dcontext.GetLogger(ctx).Debugf("***blobUploadDispatcher: request: %+v, header: %s", r, r.Header)
+	}
 	buh := &blobUploadHandler{
 		Context: ctx,
 		UUID:    getUploadUUID(ctx),
@@ -30,8 +33,8 @@ func blobUploadDispatcher(ctx *Context, r *http.Request) http.Handler {
 
 	if !ctx.readOnly { //not readonly
 		handler[http.MethodPost] = http.HandlerFunc(buh.StartBlobUpload)
-		handler[http.MethodPatch] = http.HandlerFunc(buh.PatchBlobData)
-		handler[http.MethodPut] = http.HandlerFunc(buh.PutBlobUploadComplete)
+		handler[http.MethodPatch] = http.HandlerFunc(buh.PatchBlobData)       // patch blob data
+		handler[http.MethodPut] = http.HandlerFunc(buh.PutBlobUploadComplete) // blob upload 完成
 		handler[http.MethodDelete] = http.HandlerFunc(buh.CancelBlobUpload)
 	}
 
@@ -76,8 +79,8 @@ func (buh *blobUploadHandler) StartBlobUpload(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	blobs := buh.Repository.Blobs(buh)
-	upload, err := blobs.Create(buh, options...)
+	blobs := buh.Repository.Blobs(buh)           // 返回 linkedBlobStore registry/storage/registry.go
+	upload, err := blobs.Create(buh, options...) // 创建 blobWriter
 	if err != nil {
 		if ebm, ok := err.(distribution.ErrBlobMounted); ok {
 			if err := buh.writeBlobCreatedHeaders(w, ebm.Descriptor); err != nil {
@@ -91,14 +94,14 @@ func (buh *blobUploadHandler) StartBlobUpload(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	buh.Upload = upload
+	buh.Upload = upload // blobUploadHandler 的 Upload, 即 BlobWriter 在这里赋值
 
 	if err := buh.blobUploadResponse(w, r); err != nil {
 		buh.Errors = append(buh.Errors, errcode.ErrorCodeUnknown.WithDetail(err))
 		return
 	}
 
-	w.Header().Set("Docker-Upload-UUID", buh.Upload.ID())
+	w.Header().Set("Docker-Upload-UUID", buh.Upload.ID()) // 返回头里携带 upload UUID
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -165,7 +168,7 @@ func (buh *blobUploadHandler) PatchBlobData(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	if err := copyFullPayload(buh, w, r, buh.Upload, -1, "blob PATCH"); err != nil {
+	if err := copyFullPayload(buh, w, r, buh.Upload, -1, "blob PATCH"); err != nil { // blob patch
 		buh.Errors = append(buh.Errors, errcode.ErrorCodeUnknown.WithDetail(err.Error()))
 		return
 	}
@@ -190,7 +193,7 @@ func (buh *blobUploadHandler) PutBlobUploadComplete(w http.ResponseWriter, r *ht
 	}
 	defer buh.Upload.Close()
 
-	dgstStr := r.FormValue("digest") // TODO(stevvooe): Support multiple digest parameters!
+	dgstStr := r.FormValue("digest") // TODO(stevvooe): Support multiple digest parameters! 读取 PUT 请求中的 digest 信息
 
 	if dgstStr == "" {
 		// no digest? return error, but allow retry.
@@ -210,7 +213,7 @@ func (buh *blobUploadHandler) PutBlobUploadComplete(w http.ResponseWriter, r *ht
 		return
 	}
 
-	desc, err := buh.Upload.Commit(buh, distribution.Descriptor{
+	desc, err := buh.Upload.Commit(buh, distribution.Descriptor{ // blobWriter commit
 		Digest: dgst,
 
 		// TODO(stevvooe): This isn't wildly important yet, but we should
@@ -270,7 +273,7 @@ func (buh *blobUploadHandler) CancelBlobUpload(w http.ResponseWriter, r *http.Re
 }
 
 func (buh *blobUploadHandler) ResumeBlobUpload(ctx *Context, r *http.Request) http.Handler {
-	state, err := hmacKey(ctx.Config.HTTP.Secret).unpackUploadState(r.FormValue("_state"))
+	state, err := hmacKey(ctx.Config.HTTP.Secret).unpackUploadState(r.FormValue("_state")) // 从 request 中获取 upload state 信息
 	if err != nil {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			dcontext.GetLogger(ctx).Infof("error resolving upload: %v", err)
@@ -325,11 +328,11 @@ func (buh *blobUploadHandler) blobUploadResponse(w http.ResponseWriter, r *http.
 	// TODO(stevvooe): Need a better way to manage the upload state automatically.
 	buh.State.Name = buh.Repository.Named().Name()
 	buh.State.UUID = buh.Upload.ID()
-	buh.Upload.Close()
+	buh.Upload.Close() // 调用 blobWriter 的 Close 方法， 如果 blobWriter 还没有 commit，则会保存 offset
 	buh.State.Offset = buh.Upload.Size()
 	buh.State.StartedAt = buh.Upload.StartedAt()
 
-	token, err := hmacKey(buh.Config.HTTP.Secret).packUploadState(buh.State)
+	token, err := hmacKey(buh.Config.HTTP.Secret).packUploadState(buh.State) // 将 upload state 加密成 base64
 	if err != nil {
 		dcontext.GetLogger(buh).Infof("error building upload state token: %s", err)
 		return err
@@ -338,7 +341,7 @@ func (buh *blobUploadHandler) blobUploadResponse(w http.ResponseWriter, r *http.
 	uploadURL, err := buh.urlBuilder.BuildBlobUploadChunkURL(
 		buh.Repository.Named(), buh.Upload.ID(),
 		url.Values{
-			"_state": []string{token},
+			"_state": []string{token}, // 加密过的 upload state 信息
 		})
 	if err != nil {
 		dcontext.GetLogger(buh).Infof("error building upload url: %s", err)
@@ -351,10 +354,10 @@ func (buh *blobUploadHandler) blobUploadResponse(w http.ResponseWriter, r *http.
 	}
 
 	w.Header().Set("Docker-Upload-UUID", buh.UUID)
-	w.Header().Set("Location", uploadURL)
+	w.Header().Set("Location", uploadURL) // upload url
 
 	w.Header().Set("Content-Length", "0")
-	w.Header().Set("Range", fmt.Sprintf("0-%d", endRange))
+	w.Header().Set("Range", fmt.Sprintf("0-%d", endRange)) // 设置 range
 
 	return nil
 }

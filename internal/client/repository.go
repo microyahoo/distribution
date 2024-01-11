@@ -16,6 +16,7 @@ import (
 
 	"github.com/distribution/distribution/v3"
 	"github.com/distribution/distribution/v3/internal/client/transport"
+	"github.com/distribution/distribution/v3/internal/dcontext"
 	v2 "github.com/distribution/distribution/v3/registry/api/v2"
 	"github.com/distribution/distribution/v3/registry/storage/cache"
 	"github.com/distribution/distribution/v3/registry/storage/cache/memory"
@@ -770,7 +771,7 @@ func (bs *blobs) Create(ctx context.Context, options ...distribution.BlobCreateO
 		values = append(values, url.Values{"from": {opts.Mount.From.Name()}, "mount": {opts.Mount.From.Digest().String()}})
 	}
 
-	u, err := bs.ub.BuildBlobUploadURL(bs.name, values...)
+	u, err := bs.ub.BuildBlobUploadURL(bs.name, values...) // build blob upload url
 	if err != nil {
 		return nil, err
 	}
@@ -779,6 +780,7 @@ func (bs *blobs) Create(ctx context.Context, options ...distribution.BlobCreateO
 	if err != nil {
 		return nil, err
 	}
+	dcontext.GetLogger(ctx).Debugf("****blobs.Create: url: %+v, request: %+v", u, req)
 
 	resp, err := bs.client.Do(req)
 	if err != nil {

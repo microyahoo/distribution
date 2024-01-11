@@ -184,7 +184,7 @@ func (b *bridge) createBlobEventAndWrite(action string, repo reference.Named, de
 		return err
 	}
 
-	return b.sink.Write(*event)
+	return b.sink.Write(*event) // 将 event 写入 channel
 }
 
 func (b *bridge) createBlobEvent(action string, repo reference.Named, desc distribution.Descriptor) (*Event, error) {

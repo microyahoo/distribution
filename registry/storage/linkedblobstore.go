@@ -84,7 +84,7 @@ func (lbs *linkedBlobStore) ServeBlob(ctx context.Context, w http.ResponseWriter
 func (lbs *linkedBlobStore) Put(ctx context.Context, mediaType string, p []byte) (distribution.Descriptor, error) {
 	dgst := digest.FromBytes(p)
 	// Place the data in the blob store first.
-	desc, err := lbs.blobStore.Put(ctx, mediaType, p)
+	desc, err := lbs.blobStore.Put(ctx, mediaType, p) // 先将数据写入 blobs
 	if err != nil {
 		dcontext.GetLogger(ctx).Errorf("error putting into main store: %v", err)
 		return distribution.Descriptor{}, err
@@ -144,10 +144,10 @@ func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.
 		}
 	}
 
-	uuid := uuid.NewString()
+	uuid := uuid.NewString() // 生成新的 uuid
 	startedAt := time.Now().UTC()
 
-	path, err := pathFor(uploadDataPathSpec{
+	path, err := pathFor(uploadDataPathSpec{ // <root>/v2/repositories/<name>/_uploads/<id>/data
 		name: lbs.repository.Named().Name(),
 		id:   uuid,
 	})
@@ -155,7 +155,7 @@ func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.
 		return nil, err
 	}
 
-	startedAtPath, err := pathFor(uploadStartedAtPathSpec{
+	startedAtPath, err := pathFor(uploadStartedAtPathSpec{ // <root>/v2/repositories/<name>/_uploads/<id>/startedat
 		name: lbs.repository.Named().Name(),
 		id:   uuid,
 	})
@@ -163,12 +163,12 @@ func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.
 		return nil, err
 	}
 
-	// Write a startedat file for this upload
-	if err := lbs.blobStore.driver.PutContent(ctx, startedAtPath, []byte(startedAt.Format(time.RFC3339))); err != nil {
+	// Write a startedat file for this upload 将开始时间写入 startedat 文件，注意，数据先写到 _uploads, 后面会做 move
+	if err := lbs.blobStore.driver.PutContent(ctx, startedAtPath, []byte(startedAt.Format(time.RFC3339))); err != nil { // write startedat path
 		return nil, err
 	}
 
-	return lbs.newBlobUpload(ctx, uuid, path, startedAt, false)
+	return lbs.newBlobUpload(ctx, uuid, path, startedAt, false) // 然后创建指定 UUID 的 blobWriter, 此 upload ID 会在 header 中返回给 client
 }
 
 func (lbs *linkedBlobStore) Resume(ctx context.Context, id string) (distribution.BlobWriter, error) {
@@ -301,7 +301,7 @@ func (lbs *linkedBlobStore) mount(ctx context.Context, sourceRepo reference.Name
 
 // newBlobUpload allocates a new upload controller with the given state.
 func (lbs *linkedBlobStore) newBlobUpload(ctx context.Context, uuid, path string, startedAt time.Time, append bool) (distribution.BlobWriter, error) {
-	fw, err := lbs.driver.Writer(ctx, path, append)
+	fw, err := lbs.driver.Writer(ctx, path, append) // storage driver 返回的 Writer
 	if err != nil {
 		return nil, err
 	}
@@ -339,12 +339,12 @@ func (lbs *linkedBlobStore) linkBlob(ctx context.Context, canonical distribution
 		}
 		seenDigests[dgst] = struct{}{}
 
-		blobLinkPath, err := lbs.linkPath(lbs.repository.Named().Name(), dgst)
+		blobLinkPath, err := lbs.linkPath(lbs.repository.Named().Name(), dgst) // <root>/v2/repositories/<name>/_layers/<algorithm>/<hex digest>/link
 		if err != nil {
 			return err
 		}
 
-		if err := lbs.blobStore.link(ctx, blobLinkPath, canonical.Digest); err != nil {
+		if err := lbs.blobStore.link(ctx, blobLinkPath, canonical.Digest); err != nil { // 将 canonical digest 写入 blobLinkPath
 			return err
 		}
 	}
@@ -408,10 +408,10 @@ func (lbs *linkedBlobStatter) SetDescriptor(ctx context.Context, dgst digest.Dig
 
 // blobLinkPath provides the path to the blob link, also known as layers.
 func blobLinkPath(name string, dgst digest.Digest) (string, error) {
-	return pathFor(layerLinkPathSpec{name: name, digest: dgst})
+	return pathFor(layerLinkPathSpec{name: name, digest: dgst}) // <root>/v2/repositories/<name>/_layers/<algorithm>/<hex digest>/link
 }
 
 // manifestRevisionLinkPath provides the path to the manifest revision link.
 func manifestRevisionLinkPath(name string, dgst digest.Digest) (string, error) {
-	return pathFor(manifestRevisionLinkPathSpec{name: name, revision: dgst})
+	return pathFor(manifestRevisionLinkPathSpec{name: name, revision: dgst}) // <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
 }

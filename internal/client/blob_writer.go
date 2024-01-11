@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/distribution/distribution/v3"
+	"github.com/distribution/distribution/v3/internal/dcontext"
 )
 
 type httpBlobUpload struct {
@@ -45,6 +46,7 @@ func (hbu *httpBlobUpload) ReadFrom(r io.Reader) (n int64, err error) {
 
 	req.Header.Set("Content-Type", "application/octet-stream")
 
+	dcontext.GetLogger(hbu.ctx).Debugf("****httpBlobUpload.ReadFrom: request: %+v, header: %s, hbu.location=%s, hbu.offset=%d", req, req.Header, hbu.location, hbu.offset)
 	resp, err := hbu.client.Do(req)
 	if err != nil {
 		return 0, err
@@ -80,6 +82,8 @@ func (hbu *httpBlobUpload) Write(p []byte) (n int, err error) {
 	req.Header.Set("Content-Range", fmt.Sprintf("%d-%d", hbu.offset, hbu.offset+int64(len(p)-1)))
 	req.Header.Set("Content-Length", fmt.Sprintf("%d", len(p)))
 	req.Header.Set("Content-Type", "application/octet-stream")
+
+	dcontext.GetLogger(hbu.ctx).Debugf("****httpBlobUpload: request: %+v, header: %s, len(data)=%d, hbu.location=%s, hbu.offset=%d", req, req.Header, len(p), hbu.location, hbu.offset)
 
 	resp, err := hbu.client.Do(req)
 	if err != nil {

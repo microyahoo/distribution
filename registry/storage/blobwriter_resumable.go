@@ -58,7 +58,7 @@ func (bw *blobWriter) resumeDigest(ctx context.Context) error {
 			return err
 		}
 
-		if err = h.UnmarshalBinary(storedState); err != nil {
+		if err = h.UnmarshalBinary(storedState); err != nil { // 根据 driver 中存储的 hashstates 值进行恢复
 			return err
 		}
 		bw.written = hashStateMatch.offset
@@ -79,17 +79,19 @@ type hashStateEntry struct {
 
 // getStoredHashStates returns a slice of hashStateEntries for this upload.
 func (bw *blobWriter) getStoredHashStates(ctx context.Context) ([]hashStateEntry, error) {
-	uploadHashStatePathPrefix, err := pathFor(uploadHashStatePathSpec{
+	uploadHashStatePathPrefix, err := pathFor(uploadHashStatePathSpec{ // <root>/v2/repositories/<name>/_uploads/<id>/hashstates/<algorithm>/<offset>
 		name: bw.blobStore.repository.Named().String(),
 		id:   bw.id,
 		alg:  bw.digester.Digest().Algorithm(),
-		list: true,
+		list: true, // 设置 offset 为空
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	paths, err := bw.blobStore.driver.List(ctx, uploadHashStatePathPrefix)
+	paths, err := bw.blobStore.driver.List(ctx, uploadHashStatePathPrefix) // 获取具有相同 hashstates 前缀的 paths
+	// docker/registry/v2/repositories/ceph/_uploads/fe2b9e9b-caf0-4458-8847-ab381505a1e5/hashstates/sha256/0'
+	// docker/registry/v2/repositories/ceph/_uploads/fe2b9e9b-caf0-4458-8847-ab381505a1e5/hashstates/sha256/20847'
 	if err != nil {
 		if _, ok := err.(storagedriver.PathNotFoundError); !ok {
 			return nil, err
@@ -129,7 +131,7 @@ func (bw *blobWriter) storeHashState(ctx context.Context) error {
 		return err
 	}
 
-	uploadHashStatePath, err := pathFor(uploadHashStatePathSpec{
+	uploadHashStatePath, err := pathFor(uploadHashStatePathSpec{ // <root>/v2/repositories/<name>/_uploads/<id>/hashstates/<algorithm>/<offset>
 		name:   bw.blobStore.repository.Named().String(),
 		id:     bw.id,
 		alg:    bw.digester.Digest().Algorithm(),

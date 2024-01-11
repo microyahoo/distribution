@@ -61,7 +61,7 @@ func (ts *tagStore) All(ctx context.Context) ([]string, error) {
 // Tag tags the digest with the given tag, updating the store to point at
 // the current tag. The digest must point to a manifest.
 func (ts *tagStore) Tag(ctx context.Context, tag string, desc distribution.Descriptor) error {
-	currentPath, err := pathFor(manifestTagCurrentPathSpec{
+	currentPath, err := pathFor(manifestTagCurrentPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/<tag>/current/link
 		name: ts.repository.Named().Name(),
 		tag:  tag,
 	})
@@ -77,7 +77,7 @@ func (ts *tagStore) Tag(ctx context.Context, tag string, desc distribution.Descr
 	}
 
 	// Overwrite the current link
-	return ts.blobStore.link(ctx, currentPath, desc.Digest)
+	return ts.blobStore.link(ctx, currentPath, desc.Digest) // 将 digest 写入 currentPath
 }
 
 // resolve the current revision for name and tag.
@@ -126,7 +126,7 @@ func (ts *tagStore) linkedBlobStore(ctx context.Context, tag string) *linkedBlob
 		repository: ts.repository,
 		ctx:        ctx,
 		linkPath: func(name string, dgst digest.Digest) (string, error) {
-			return pathFor(manifestTagIndexEntryLinkPathSpec{
+			return pathFor(manifestTagIndexEntryLinkPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/<tag>/index/<algorithm>/<hex digest>/link
 				name:     name,
 				tag:      tag,
 				revision: dgst,

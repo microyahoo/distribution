@@ -24,17 +24,17 @@ type blobServer struct {
 }
 
 func (bs *blobServer) ServeBlob(ctx context.Context, w http.ResponseWriter, r *http.Request, dgst digest.Digest) error {
-	desc, err := bs.statter.Stat(ctx, dgst)
+	desc, err := bs.statter.Stat(ctx, dgst) // 返回的 descriptor 中包含 size 和 digest
 	if err != nil {
 		return err
 	}
 
-	path, err := bs.pathFn(desc.Digest)
+	path, err := bs.pathFn(desc.Digest) // <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>/data
 	if err != nil {
 		return err
 	}
 
-	if bs.redirect { // redirect url
+	if bs.redirect { // redirect url 注意 ceph s3 不支持 redirect，需要 disable
 		redirectURL, err := bs.driver.RedirectURL(r, path)
 		if err != nil {
 			return err
@@ -70,6 +70,6 @@ func (bs *blobServer) ServeBlob(ctx context.Context, w http.ResponseWriter, r *h
 		w.Header().Set("Content-Length", fmt.Sprint(desc.Size))
 	}
 
-	http.ServeContent(w, r, desc.Digest.String(), time.Time{}, br)
+	http.ServeContent(w, r, desc.Digest.String(), time.Time{}, br) // ?? ServeContent
 	return nil
 }

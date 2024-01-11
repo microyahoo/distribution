@@ -29,7 +29,7 @@ func closeResources(handler http.Handler, closers ...io.Closer) http.Handler {
 // upload, it avoids sending a 400 error to keep the logs cleaner.
 //
 // The copy will be limited to `limit` bytes, if limit is greater than zero.
-func copyFullPayload(ctx context.Context, responseWriter http.ResponseWriter, r *http.Request, destWriter io.Writer, limit int64, action string) error {
+func copyFullPayload(ctx context.Context, responseWriter http.ResponseWriter, r *http.Request, destWriter io.Writer, limit int64, action string) error { // destWriter 为 linkedBlobStore.Create(), 返回 blobWriter. registry/storage/linkedblobstore.go
 	// Get a channel that tells us if the client disconnects
 	clientClosed := r.Context().Done()
 	body := r.Body
@@ -39,10 +39,10 @@ func copyFullPayload(ctx context.Context, responseWriter http.ResponseWriter, r 
 
 	// Read in the data, if any.
 	start := time.Now()
-	copied, err := io.CopyBuffer(destWriter, body, make([]byte, 4<<20))
+	copied, err := io.CopyBuffer(destWriter, body, make([]byte, 4<<20)) // 从 body 中读取并写入到 blobWriter, blobWriter 实现了 ReadFrom 方法。manifest 不是这样的
 	_, ok1 := destWriter.(io.WriterTo)
 	_, ok2 := body.(io.ReaderFrom)
-	dcontext.GetLogger(ctx).Infof("****The duration of io.Copy(size: %d) from reader(%T, %t) to writer(%T, %t): %v", copied, body, ok2, destWriter, ok1, time.Since(start))
+	dcontext.GetLogger(ctx).Infof("****The action duration of io.Copy(action: %s, size: %d) from reader(%T, %t) to writer(%T, %t): %v", action, copied, body, ok2, destWriter, ok1, time.Since(start))
 	if clientClosed != nil && (err != nil || (r.ContentLength > 0 && copied < r.ContentLength)) {
 		// Didn't receive as much content as expected. Did the client
 		// disconnect during the request? If so, avoid returning a 400

@@ -146,7 +146,7 @@ func NewRegistry(ctx context.Context, config *configuration.Configuration) (*Reg
 	var handler http.Handler = app
 	handler = alive("/", handler)
 	handler = health.Handler(handler)
-	handler = panicHandler(handler)
+	handler = panicHandler(handler) // panic handler
 	if !config.Log.AccessLog.Disabled {
 		handler = gorhandlers.CombinedLoggingHandler(os.Stdout, handler)
 	}
@@ -443,7 +443,7 @@ func alive(path string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == path {
 			w.Header().Set("Cache-Control", "no-cache")
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusOK) // 路径匹配上直接返回 200
 			return
 		}
 

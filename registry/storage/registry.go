@@ -134,7 +134,7 @@ func BlobDescriptorServiceFactory(factory distribution.BlobDescriptorServiceFact
 // BlobDescriptorCacheProvider returns a functional option for
 // NewRegistry. It creates a cached blob statter for use by the
 // registry.
-func BlobDescriptorCacheProvider(blobDescriptorCacheProvider cache.BlobDescriptorCacheProvider) RegistryOption {
+func BlobDescriptorCacheProvider(blobDescriptorCacheProvider cache.BlobDescriptorCacheProvider) RegistryOption { // 设置 blob descriptor cache
 	// TODO(aaronl): The duplication of statter across several objects is
 	// ugly, and prevents us from using interface types in the registry
 	// struct. Ideally, blobStore and blobServer should be lazily
@@ -142,7 +142,7 @@ func BlobDescriptorCacheProvider(blobDescriptorCacheProvider cache.BlobDescripto
 	// blobDescriptorCacheProvider.
 	return func(registry *registry) error {
 		if blobDescriptorCacheProvider != nil {
-			statter := cache.NewCachedBlobStatter(blobDescriptorCacheProvider, registry.statter)
+			statter := cache.NewCachedBlobStatter(blobDescriptorCacheProvider, registry.statter) // 设置缓存 blob scatter
 			registry.blobStore.statter = statter
 			registry.blobServer.statter = statter
 			registry.blobDescriptorCacheProvider = blobDescriptorCacheProvider
@@ -258,7 +258,7 @@ func (repo *repository) Manifests(ctx context.Context, options ...distribution.M
 	var statter distribution.BlobDescriptorService = &linkedBlobStatter{
 		blobStore:  repo.blobStore,
 		repository: repo,
-		linkPath:   manifestRevisionLinkPath,
+		linkPath:   manifestRevisionLinkPath, // <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
 	}
 
 	if repo.registry.blobDescriptorServiceFactory != nil {
@@ -274,7 +274,7 @@ func (repo *repository) Manifests(ctx context.Context, options ...distribution.M
 
 		// TODO(stevvooe): linkPath limits this blob store to only
 		// manifests. This instance cannot be used for blob checks.
-		linkPath:              manifestRevisionLinkPath,
+		linkPath:              manifestRevisionLinkPath, // <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
 		linkDirectoryPathSpec: manifestDirectoryPathSpec,
 	}
 
@@ -346,7 +346,7 @@ func (repo *repository) Blobs(ctx context.Context) distribution.BlobStore {
 
 		// TODO(stevvooe): linkPath limits this blob store to only layers.
 		// This instance cannot be used for manifest checks.
-		linkPath:               blobLinkPath,
+		linkPath:               blobLinkPath, // <root>/v2/repositories/<name>/_layers/<algorithm>/<hex digest>/link
 		linkDirectoryPathSpec:  layersPathSpec{name: repo.name.Name()},
 		deleteEnabled:          repo.registry.deleteEnabled,
 		resumableDigestEnabled: repo.resumableDigestEnabled,

@@ -48,7 +48,7 @@ type Manifest struct {
 	manifest.Versioned
 
 	// Config references the image configuration as a blob.
-	Config distribution.Descriptor `json:"config"`
+	Config distribution.Descriptor `json:"config"` // manifest 中存储的 config 信息
 
 	// Layers lists descriptors for the layers referenced by the
 	// configuration.
