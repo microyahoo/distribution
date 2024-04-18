@@ -69,7 +69,7 @@ func (reg *registry) Repositories(ctx context.Context, repos []string, last stri
 
 // Enumerate applies ingester to each repository
 func (reg *registry) Enumerate(ctx context.Context, ingester func(string) error) error {
-	root, err := pathFor(repositoriesRootPathSpec{})
+	root, err := pathFor(repositoriesRootPathSpec{}) // <root>/v2/repositories
 	if err != nil {
 		return err
 	}

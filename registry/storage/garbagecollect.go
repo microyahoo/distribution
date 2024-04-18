@@ -50,7 +50,7 @@ func MarkAndSweep(ctx context.Context, storageDriver driver.StorageDriver, regis
 			return fmt.Errorf("failed to construct repository: %v", err)
 		}
 
-		manifestService, err := repository.Manifests(ctx)
+		manifestService, err := repository.Manifests(ctx) // registry/storage/registry.go
 		if err != nil {
 			return fmt.Errorf("failed to construct manifest service: %v", err)
 		}
@@ -60,7 +60,7 @@ func MarkAndSweep(ctx context.Context, storageDriver driver.StorageDriver, regis
 			return fmt.Errorf("unable to convert ManifestService into ManifestEnumerator")
 		}
 
-		err = manifestEnumerator.Enumerate(ctx, func(dgst digest.Digest) error {
+		err = manifestEnumerator.Enumerate(ctx, func(dgst digest.Digest) error { // registry/storage/manifeststore.go
 			if opts.RemoveUntagged {
 				// fetch all tags where this manifest is the latest one
 				tags, err := repository.Tags(ctx).Lookup(ctx, distribution.Descriptor{Digest: dgst})

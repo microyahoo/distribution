@@ -227,8 +227,8 @@ func (lbs *linkedBlobStore) Delete(ctx context.Context, dgst digest.Digest) erro
 	return nil
 }
 
-func (lbs *linkedBlobStore) Enumerate(ctx context.Context, ingestor func(digest.Digest) error) error {
-	rootPath, err := pathFor(lbs.linkDirectoryPathSpec)
+func (lbs *linkedBlobStore) Enumerate(ctx context.Context, ingestor func(digest.Digest) error) error { // registry/storage/registry.go
+	rootPath, err := pathFor(lbs.linkDirectoryPathSpec) // <root>/v2/repositories/<name>/_manifests/revisions/  or <root>/v2/repositories/<name>/_manifests/tags/<tag>/index/
 	if err != nil {
 		return err
 	}
@@ -252,7 +252,7 @@ func (lbs *linkedBlobStore) Enumerate(ctx context.Context, ingestor func(digest.
 		}
 
 		// ensure this conforms to the linkPathFns
-		_, err = lbs.Stat(ctx, digest)
+		_, err = lbs.Stat(ctx, digest) // registry/storage/linkedblobstore.go
 		if err != nil {
 			// we expect this error to occur so we move on
 			if err == distribution.ErrBlobUnknown {
@@ -366,7 +366,7 @@ type linkedBlobStatter struct {
 var _ distribution.BlobDescriptorService = &linkedBlobStatter{}
 
 func (lbs *linkedBlobStatter) Stat(ctx context.Context, dgst digest.Digest) (distribution.Descriptor, error) {
-	blobLinkPath, err := lbs.linkPath(lbs.repository.Named().Name(), dgst)
+	blobLinkPath, err := lbs.linkPath(lbs.repository.Named().Name(), dgst) // <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
 	if err != nil {
 		return distribution.Descriptor{}, err
 	}
@@ -389,7 +389,7 @@ func (lbs *linkedBlobStatter) Stat(ctx context.Context, dgst digest.Digest) (dis
 	// TODO(stevvooe): Look up repository local mediatype and replace that on
 	// the returned descriptor.
 
-	return lbs.blobStore.statter.Stat(ctx, target)
+	return lbs.blobStore.statter.Stat(ctx, target) // registry/storage/blobstore.go
 }
 
 func (lbs *linkedBlobStatter) Clear(ctx context.Context, dgst digest.Digest) (err error) {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/distribution/distribution/v3"
 	"github.com/distribution/distribution/v3/internal/dcontext"
@@ -126,7 +127,7 @@ func (imh *manifestHandler) GetManifest(w http.ResponseWriter, r *http.Request) 
 			}
 			return
 		}
-		imh.Digest = desc.Digest
+		imh.Digest = desc.Digest // 设置 digst
 	}
 
 	if etagMatch(r, imh.Digest.String()) {
@@ -458,7 +459,9 @@ func (imh *manifestHandler) DeleteManifest(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = manifests.Delete(imh, imh.Digest)
+	now := time.Now()
+	err = manifests.Delete(imh, imh.Digest) // 删除 <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
+	dcontext.GetLogger(imh).Infof("DeleteImageTag with digest %s with time: %s", imh.Digest, time.Since(now))
 	if err != nil {
 		switch err {
 		case digest.ErrDigestUnsupported:
@@ -478,7 +481,9 @@ func (imh *manifestHandler) DeleteManifest(w http.ResponseWriter, r *http.Reques
 	}
 
 	tagService := imh.Repository.Tags(imh)
+	now = time.Now()
 	referencedTags, err := tagService.Lookup(imh, distribution.Descriptor{Digest: imh.Digest})
+	dcontext.GetLogger(imh).Infof("DeleteImageTag with lookup digest %s with time: %s", imh.Digest, time.Since(now))
 	if err != nil {
 		imh.Errors = append(imh.Errors, err)
 		return
@@ -490,6 +495,7 @@ func (imh *manifestHandler) DeleteManifest(w http.ResponseWriter, r *http.Reques
 	)
 	g := errgroup.Group{}
 	g.SetLimit(storage.DefaultConcurrencyLimit)
+	now = time.Now()
 	for _, tag := range referencedTags {
 		tag := tag
 
@@ -504,6 +510,7 @@ func (imh *manifestHandler) DeleteManifest(w http.ResponseWriter, r *http.Reques
 	}
 	_ = g.Wait() // imh will record all errors, so ignore the error of Wait()
 	imh.Errors = errs
+	dcontext.GetLogger(imh).Infof("DeleteImageTag with untag digest %s with time: %s", imh.Digest, time.Since(now))
 
 	w.WriteHeader(http.StatusAccepted)
 }

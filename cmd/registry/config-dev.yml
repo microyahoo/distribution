@@ -13,10 +13,10 @@ storage:
       accesskey: testy
       secretkey: testy
       region: us-west-1
-      regionendpoint: http://10.9.8.73:80
+      regionendpoint: http://10.9.8.95:80
       # forcepathstyle: true
       # accelerate: false
-      bucket: test2
+      bucket: test
       # encrypt: true
       # chunksize: 5242880
       multipartcopychunksize: 33554432

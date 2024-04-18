@@ -35,7 +35,7 @@ func (v Vacuum) RemoveBlob(dgst string) error {
 		return err
 	}
 
-	blobPath, err := pathFor(blobPathSpec{digest: d})
+	blobPath, err := pathFor(blobPathSpec{digest: d}) // <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (v Vacuum) RemoveManifest(name string, dgst digest.Digest, tags []string) e
 	// remove a tag manifest reference, in case of not found continue to next one
 	for _, tag := range tags {
 
-		tagsPath, err := pathFor(manifestTagIndexEntryPathSpec{name: name, revision: dgst, tag: tag})
+		tagsPath, err := pathFor(manifestTagIndexEntryPathSpec{name: name, revision: dgst, tag: tag}) // <root>/v2/repositories/<name>/_manifests/tags/<tag>/index/<algorithm>/<hex digest>/
 		if err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func (v Vacuum) RemoveManifest(name string, dgst digest.Digest, tags []string) e
 		}
 	}
 
-	manifestPath, err := pathFor(manifestRevisionPathSpec{name: name, revision: dgst})
+	manifestPath, err := pathFor(manifestRevisionPathSpec{name: name, revision: dgst}) // <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/
 	if err != nil {
 		return err
 	}

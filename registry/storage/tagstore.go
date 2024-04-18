@@ -28,14 +28,14 @@ type tagStore struct {
 
 // All returns all tags
 func (ts *tagStore) All(ctx context.Context) ([]string, error) {
-	pathSpec, err := pathFor(manifestTagsPathSpec{
+	pathSpec, err := pathFor(manifestTagsPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/
 		name: ts.repository.Named().Name(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	entries, err := ts.blobStore.driver.List(ctx, pathSpec)
+	entries, err := ts.blobStore.driver.List(ctx, pathSpec) // 以 s3 为例，列出 <root>/v2/repositories/<name>/_manifests/tags/ 目录下的所有 entries
 	if err != nil {
 		switch err := err.(type) {
 		case storagedriver.PathNotFoundError:
@@ -82,7 +82,7 @@ func (ts *tagStore) Tag(ctx context.Context, tag string, desc distribution.Descr
 
 // resolve the current revision for name and tag.
 func (ts *tagStore) Get(ctx context.Context, tag string) (distribution.Descriptor, error) {
-	currentPath, err := pathFor(manifestTagCurrentPathSpec{
+	currentPath, err := pathFor(manifestTagCurrentPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/<tag>/current/link
 		name: ts.repository.Named().Name(),
 		tag:  tag,
 	})
@@ -90,7 +90,7 @@ func (ts *tagStore) Get(ctx context.Context, tag string) (distribution.Descripto
 		return distribution.Descriptor{}, err
 	}
 
-	revision, err := ts.blobStore.readlink(ctx, currentPath)
+	revision, err := ts.blobStore.readlink(ctx, currentPath) // 从 link 文件或对象中读取对应的 revision
 	if err != nil {
 		switch err.(type) {
 		case storagedriver.PathNotFoundError:
@@ -105,7 +105,7 @@ func (ts *tagStore) Get(ctx context.Context, tag string) (distribution.Descripto
 
 // Untag removes the tag association
 func (ts *tagStore) Untag(ctx context.Context, tag string) error {
-	tagPath, err := pathFor(manifestTagPathSpec{
+	tagPath, err := pathFor(manifestTagPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/<tag>/
 		name: ts.repository.Named().Name(),
 		tag:  tag,
 	})
@@ -163,12 +163,12 @@ func (ts *tagStore) Lookup(ctx context.Context, desc distribution.Descriptor) ([
 		tag := tag
 
 		g.Go(func() error {
-			tagLinkPathSpec := manifestTagCurrentPathSpec{
+			tagLinkPathSpec := manifestTagCurrentPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/<tag>/current/link
 				name: ts.repository.Named().Name(),
 				tag:  tag,
 			}
 
-			tagLinkPath, _ := pathFor(tagLinkPathSpec)
+			tagLinkPath, _ := pathFor(tagLinkPathSpec) // <root>/v2/repositories/<name>/_manifests/tags/<tag>/current/link
 			tagDigest, err := ts.blobStore.readlink(ctx, tagLinkPath)
 			if err != nil {
 				switch err.(type) {
@@ -198,7 +198,7 @@ func (ts *tagStore) Lookup(ctx context.Context, desc distribution.Descriptor) ([
 
 func (ts *tagStore) ManifestDigests(ctx context.Context, tag string) ([]digest.Digest, error) {
 	tagLinkPath := func(name string, dgst digest.Digest) (string, error) {
-		return pathFor(manifestTagIndexEntryLinkPathSpec{
+		return pathFor(manifestTagIndexEntryLinkPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/<tag>/index/<algorithm>/<hex digest>/link
 			name:     name,
 			tag:      tag,
 			revision: dgst,
@@ -214,7 +214,7 @@ func (ts *tagStore) ManifestDigests(ctx context.Context, tag string) ([]digest.D
 		repository: ts.repository,
 		ctx:        ctx,
 		linkPath:   tagLinkPath,
-		linkDirectoryPathSpec: manifestTagIndexPathSpec{
+		linkDirectoryPathSpec: manifestTagIndexPathSpec{ // <root>/v2/repositories/<name>/_manifests/tags/<tag>/index/
 			name: ts.repository.Named().Name(),
 			tag:  tag,
 		},

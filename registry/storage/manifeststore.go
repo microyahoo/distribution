@@ -149,7 +149,7 @@ func (ms *manifestStore) Delete(ctx context.Context, dgst digest.Digest) error {
 }
 
 func (ms *manifestStore) Enumerate(ctx context.Context, ingester func(digest.Digest) error) error {
-	err := ms.blobStore.Enumerate(ctx, func(dgst digest.Digest) error {
+	err := ms.blobStore.Enumerate(ctx, func(dgst digest.Digest) error { // registry/storage/linkedblobstore.go
 		err := ingester(dgst)
 		if err != nil {
 			return err

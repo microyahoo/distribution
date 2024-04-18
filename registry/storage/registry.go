@@ -253,7 +253,7 @@ func (repo *repository) Tags(ctx context.Context) distribution.TagService {
 // may be context sensitive in the future. The instance should be used similar
 // to a request local.
 func (repo *repository) Manifests(ctx context.Context, options ...distribution.ManifestServiceOption) (distribution.ManifestService, error) {
-	manifestDirectoryPathSpec := manifestRevisionsPathSpec{name: repo.name.Name()}
+	manifestDirectoryPathSpec := manifestRevisionsPathSpec{name: repo.name.Name()} // <root>/v2/repositories/<name>/_manifests/revisions/
 
 	var statter distribution.BlobDescriptorService = &linkedBlobStatter{
 		blobStore:  repo.blobStore,
@@ -274,8 +274,8 @@ func (repo *repository) Manifests(ctx context.Context, options ...distribution.M
 
 		// TODO(stevvooe): linkPath limits this blob store to only
 		// manifests. This instance cannot be used for blob checks.
-		linkPath:              manifestRevisionLinkPath, // <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
-		linkDirectoryPathSpec: manifestDirectoryPathSpec,
+		linkPath:              manifestRevisionLinkPath,  // <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
+		linkDirectoryPathSpec: manifestDirectoryPathSpec, // <root>/v2/repositories/<name>/_manifests/revisions/
 	}
 
 	manifestListHandler := &manifestListHandler{
@@ -346,8 +346,8 @@ func (repo *repository) Blobs(ctx context.Context) distribution.BlobStore {
 
 		// TODO(stevvooe): linkPath limits this blob store to only layers.
 		// This instance cannot be used for manifest checks.
-		linkPath:               blobLinkPath, // <root>/v2/repositories/<name>/_layers/<algorithm>/<hex digest>/link
-		linkDirectoryPathSpec:  layersPathSpec{name: repo.name.Name()},
+		linkPath:               blobLinkPath,                           // <root>/v2/repositories/<name>/_layers/<algorithm>/<hex digest>/link
+		linkDirectoryPathSpec:  layersPathSpec{name: repo.name.Name()}, // <root>/v2/repositories/<name>/_layers
 		deleteEnabled:          repo.registry.deleteEnabled,
 		resumableDigestEnabled: repo.resumableDigestEnabled,
 	}

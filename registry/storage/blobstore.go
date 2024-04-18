@@ -120,7 +120,7 @@ func (bs *blobStore) Enumerate(ctx context.Context, ingester func(dgst digest.Di
 // path returns the canonical path for the blob identified by digest. The blob
 // may or may not exist.
 func (bs *blobStore) path(dgst digest.Digest) (string, error) {
-	bp, err := pathFor(blobDataPathSpec{
+	bp, err := pathFor(blobDataPathSpec{ // <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>/data
 		digest: dgst,
 	})
 	if err != nil {
